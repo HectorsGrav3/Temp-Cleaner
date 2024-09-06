@@ -1,56 +1,34 @@
 import os
-import sys
-import platform
-import ctypes
+import shutil
+import glob
 
-def is_admin():
-    if platform.system() == "Windows":
+def delete_files(directory):
+    # Get all files and folders in the directory
+    files = glob.glob(os.path.join(directory, "*"))
+    
+    for file in files:
         try:
-            return ctypes.windll.shell32.IsUserAnAdmin() != 0
-        except AttributeError:
-            return False
-    elif platform.system() == "Linux" or platform.system() == "Darwin":
-        return os.geteuid() == 0
-    else:
-        return False
+            if os.path.isfile(file) or os.path.islink(file):
+                os.remove(file)
+            elif os.path.isdir(file):
+                shutil.rmtree(file)
+        except Exception as e:
+            print(f"{file} Cannot be deleted because its used by another process")
 
-def delete_file(file_path):
-    try:
-        os.remove(file_path)
-        print(f"Deleted: {file_path}")
-    except PermissionError:
-        print(f"Access denied: {file_path}")
-    except OSError as e:
-        print(f"Error occurred while deleting {file_path}: {e}")
+# Delete files in the Recent folder
+recent_path = os.path.join(os.environ['USERPROFILE'], 'Recent')
+delete_files(recent_path)
 
-if is_admin():
-    # Clearing Recent folder
-    recent_folder = os.path.join(os.environ['userprofile'], 'Recent')
-    for root, dirs, files in os.walk(recent_folder):
-        for file in files:
-            file_path = os.path.join(root, file)
-            delete_file(file_path)
+# Delete files in the Prefetch folder
+prefetch_path = r'C:\Windows\Prefetch'
+delete_files(prefetch_path)
 
-    # Clearing Prefetch folder
-    prefetch_folder = 'C:\\Windows\\Prefetch'
-    for file in os.listdir(prefetch_folder):
-        file_path = os.path.join(prefetch_folder, file)
-        delete_file(file_path)
+# Delete files in the Temp folder
+temp_windows_path = r'C:\Windows\Temp'
+delete_files(temp_windows_path)
 
-    # Clearing Windows Temp folder
-    windows_temp_folder = 'C:\\Windows\\Temp'
-    for file in os.listdir(windows_temp_folder):
-        file_path = os.path.join(windows_temp_folder, file)
-        delete_file(file_path)
+# Delete files in the user's local Temp folder
+user_temp_path = os.path.join(os.environ['USERPROFILE'], 'AppData', 'Local', 'Temp')
+delete_files(user_temp_path)
 
-    # Clearing User Temp folder
-    user_temp_folder = os.path.join(os.environ['USERPROFILE'], 'appdata', 'local', 'temp')
-    for file in os.listdir(user_temp_folder):
-        file_path = os.path.join(user_temp_folder, file)
-        delete_file(file_path)
-
-    input("Cleaning completed. Press Enter to exit...")
-else:
-    print("Please run the script as an administrator to perform the cleaning operation.")
-    input("Press Enter to exit...")
-
+input("Press Enter to continue...")
